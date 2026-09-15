@@ -1,0 +1,13 @@
+.env
+*.env
+.streamlit/secrets.toml
+__pycache__/
+*.pyc
+.venv/
+venv/
+*cache*.csv
+*cache*.json
+*error_log*.txt
+saved_analysis_scenes*.json
+*.sqlite3
+.DS_Store

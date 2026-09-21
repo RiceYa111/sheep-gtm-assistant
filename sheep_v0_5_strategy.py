@@ -9,18 +9,8 @@ from datetime import date, datetime
 from pathlib import Path
 import numpy as np
 import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 import streamlit as st
-import pdf_report as _pdf_report
-_pdf_report=importlib.reload(_pdf_report)
-build_gtm_pdf=_pdf_report.build_gtm_pdf
-build_strategy_onepage_pdf=_pdf_report.build_strategy_onepage_pdf
-import deepseek_user_insight as dsui
-import deepseek_strategy as dstrategy
 from session_runtime import SessionFile, persist_upload, source_version
-from reportlab.lib.units import mm
 
 st.set_page_config(page_title="小羊分析助手", page_icon="🐑", layout="wide", initial_sidebar_state="collapsed")
 st.caption("🐑 公开体验版 · 销量与用户样本为演示数据，不代表真实调研结论。上传内容仅在当前会话中使用；点击 AI 分析会发送至 DeepSeek，请仅上传模拟或已脱敏资料。")
@@ -582,8 +572,9 @@ def load_user_profile_survey():
         frame[col]=frame[col].fillna("").astype(str).str.strip()
     return frame,path
 
-user_material_df=load_user_materials()
-user_profile_survey_df,user_profile_survey_path=load_user_profile_survey()
+user_material_df=pd.DataFrame()
+user_profile_survey_df=pd.DataFrame()
+user_profile_survey_path=None
 
 def stable_seed(text): return sum((idx+1)*ord(ch) for idx,ch in enumerate(str(text)))%100000
 
@@ -681,12 +672,12 @@ def simulated_product_profile(brand,series,region,month_index,series_rank_factor
     return brand_factor*series_factor*trend*fluctuation*launch_factor*handoff_factor*region_affinity*regional_pulse
 
 @st.cache_data
-def create_market_data(period_key):
+def create_market_data(period_key, regions, periods):
     rows=[]
     pf={"5万以下":1.90,"5-10万":1.70,"10-20万":1.38,"20-30万":1.05,"30-40万":0.72,"40-50万":0.48,"50-60万":0.30,"60-70万":0.22,"70-80万":0.16,"80-100万":0.12,"100万以上":0.06}
     ef={"ICE":1.00,"BEV":0.74,"PHEV":0.58}; bf={"轿车":1.06,"SUV":1.18,"MPV":0.34}
-    for region in REGION_OPTIONS:
-        for period in REPORTING_MONTHS:
+    for region in regions:
+        for period in periods:
             month=period["自然月"]
             month_index=period["月份序号"]
             month_label=period["月份"]
@@ -702,10 +693,10 @@ def create_market_data(period_key):
                         rows.append({"月份":month_label,"月份序号":month_index,"地区":region,"价格段":price,"能源大类":energy,"车身形式":body,"销量":max(sales,10 if region!="全国" else 120)})
     return pd.DataFrame(rows)
 
-market_df=create_market_data(PERIOD_RANGE_TEXT)
+market_df=pd.DataFrame()
 
 @st.cache_data
-def create_target_data(car_data,period_key):
+def create_target_data(car_data,period_key,regions,periods):
     rows=[]
     pf={"5万以下":1.90,"5-10万":1.70,"10-20万":1.38,"20-30万":1.05,"30-40万":0.72,"40-50万":0.48,"50-60万":0.30,"60-70万":0.22,"70-80万":0.16,"80-100万":0.12,"100万以上":0.06}
     ef={"ICE":.85,"BEV":.70,"PHEV":.62}; bf={"轿车":.72,"SUV":.84,"MPV":.36}
@@ -722,8 +713,8 @@ def create_target_data(car_data,period_key):
     for _,row in car_data.iterrows():
         segs=[s for s in row["覆盖价格段"] if s in PRICE_SEGMENTS] or [row["主价格段"]]
         for seg in segs:
-            for region in REGION_OPTIONS:
-                for period in REPORTING_MONTHS:
+            for region in regions:
+                for period in periods:
                     month=period["自然月"]
                     month_index=period["月份序号"]
                     month_label=period["月份"]
@@ -749,13 +740,55 @@ def calibrate_target_sales_to_market(target_data,market_data,max_covered_share=.
     calibrated["销量"]=(calibrated["销量"]*scale).round().clip(lower=0).astype(int)
     return calibrated.drop(columns=["市场容量","产品合计"])
 
-# Version suffix invalidates older cached data after the capacity calibration changes.
-target_df_all=create_target_data(car_df,f"{PERIOD_RANGE_TEXT}|regional-v4-capacity")
-target_df_all=calibrate_target_sales_to_market(target_df_all,market_df,.72)
-latest=(target_df_all[(target_df_all["地区"]=="全国")&(target_df_all["月份序号"]==LAST_PERIOD_INDEX)].groupby("分析对象名称",as_index=False)["销量"].sum().rename(columns={"销量":"近月销量"}))
-car_df=car_df.merge(latest,on="分析对象名称",how="left")
-car_df["近月销量"]=car_df["近月销量"].fillna(0).astype(int)
-car_df["趋势"]="稳定"
+# Homepage only needs the small vehicle catalogue. Sales data is loaded below
+# after routing and target validation, never during initial homepage rendering.
+target_df_all=pd.DataFrame()
+
+@st.cache_data(show_spinner=False, max_entries=4)
+def load_sales_bundle(catalogue_json, period_key, summary_only=False):
+    catalogue=pd.read_json(io.StringIO(catalogue_json), orient="split")
+    regions=("全国",) if summary_only else tuple(REGION_OPTIONS)
+    periods=(REPORTING_MONTHS[-1],) if summary_only else tuple(REPORTING_MONTHS)
+    market=create_market_data(period_key, regions, periods)
+    products=create_target_data(catalogue, period_key, regions, periods)
+    products=calibrate_target_sales_to_market(products,market,.72)
+    latest=(products[(products["地区"]=="全国")&(products["月份序号"]==LAST_PERIOD_INDEX)]
+            .groupby("分析对象名称",as_index=False)["销量"].sum().rename(columns={"销量":"近月销量"}))
+    catalogue=catalogue.merge(latest,on="分析对象名称",how="left")
+    catalogue["近月销量"]=catalogue["近月销量"].fillna(0).astype(int)
+    catalogue["趋势"]="稳定"
+    return market,products,catalogue
+
+def prepare_page_data(page):
+    global market_df,target_df_all,car_df,user_material_df,user_profile_survey_df,user_profile_survey_path
+    global px,go,make_subplots,build_gtm_pdf,build_strategy_onepage_pdf,dsui,dstrategy,mm
+    if page=="首页":
+        return
+    query=str(st.session_state.get("target_query", "")).strip()
+    if page!="市场大盘" and not has_explicit_analysis_target():
+        return
+    if query and query!="自定义分析目标" and not target_info(query)["found"]:
+        return
+    label=query or "整体市场"
+    with st.spinner(f"正在分析{label} · 加载{page}所需数据……"):
+        import plotly.express as px
+        import plotly.graph_objects as go
+        from plotly.subplots import make_subplots
+        from pdf_report import build_gtm_pdf, build_strategy_onepage_pdf
+        from reportlab.lib.units import mm
+        import deepseek_user_insight as dsui
+        import deepseek_strategy as dstrategy
+        # User charts need only a national latest-month snapshot for vehicle cards.
+        # Market/competitor/strategy share one full cached bundle so denominators
+        # and cross-brand competitor rankings retain their existing definitions.
+        summary_only=page=="用户洞察"
+        market_df,target_df_all,car_df=load_sales_bundle(
+            car_df.to_json(orient="split",force_ascii=False),
+            f"{PERIOD_RANGE_TEXT}|regional-v4-capacity",summary_only)
+        if page in {"用户洞察","策略生成"}:
+            user_material_df=load_user_materials()
+            user_profile_survey_df,user_profile_survey_path=load_user_profile_survey()
+
 
 def default_target_name(): return str(car_df.iloc[0]["车系"]) if len(car_df) else "奥迪A6L"
 if "current_page" not in st.session_state: st.session_state.current_page="首页"
@@ -3581,6 +3614,8 @@ if requested_target:
 if requested_module in {"市场大盘","竞品格局","用户洞察","策略生成"}:
     set_page(requested_module)
     st.query_params.clear()
+
+prepare_page_data(st.session_state.current_page)
 
 if st.session_state.current_page=="首页":
     st.markdown('<div class="home-title">小羊分析助手</div>',unsafe_allow_html=True)

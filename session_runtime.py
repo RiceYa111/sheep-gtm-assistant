@@ -58,7 +58,7 @@ def source_version():
     for kind in ("survey", "materials"):
         digest.update(kind.encode())
         value = st.session_state.get("_source_" + kind)
-        digest.update(value[1] if value else b"bundled-demo-v1")
+        digest.update(value[1] if value else b"bundled-demo-v2-complete-catalogue")
     return digest.hexdigest()
 
 
@@ -90,3 +90,7 @@ def reserve_api_call():
             raise RuntimeError("今日共享 AI 体验额度已用完，请使用基础版策略或稍后再试。")
         connection.execute("UPDATE quota SET calls = calls + 1 WHERE day = ?", (today,))
     st.session_state["_api_calls"] = used + 1
+
+
+def remaining_session_calls():
+    return max(0, int(setting("AI_SESSION_CALL_LIMIT", "8")) - st.session_state.get("_api_calls", 0))

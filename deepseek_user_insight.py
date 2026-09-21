@@ -5,6 +5,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
+import streamlit as st
 from session_runtime import SessionFile, saved_upload, source_version, setting, reserve_api_call
 
 try:
@@ -98,7 +99,9 @@ def find_local_table(kind):
 def load_source_table(kind, uploaded=None):
     if uploaded is None:
         uploaded = saved_upload(kind)
-    required = SURVEY_REQUIRED if kind == "survey" else MATERIAL_REQUIRED
+    required = SURVEY_REQUIRED if kind == "survey" else MATERIAL_REQUIRED + [
+        "年龄段", "职业", "家庭结构", "是否已购", "购车阶段", "决策周期", "主要决策人", "决策影响人",
+    ]
     if uploaded is not None:
         try:
             return _prepare(read_table(uploaded, uploaded.name), required), f"页面上传 · {uploaded.name}", None
@@ -109,9 +112,24 @@ def load_source_table(kind, uploaded=None):
         return pd.DataFrame(columns=required), "未找到文件", None
     try:
         label = f"本地{'演示' if is_demo else '正式'}文件 · {path.name}"
-        return _prepare(read_table(path), required), label, None
+        supplement = ROOT / "data" / ("user_profile_survey_demo_supplement.xlsx" if kind == "survey" else "user_materials_demo_supplement.xlsx")
+        supplement_path = str(supplement) if is_demo and supplement.exists() else ""
+        frame = _load_bundled_table(str(path), path.stat().st_mtime_ns, supplement_path,
+                                    supplement.stat().st_mtime_ns if supplement_path else 0)
+        return _prepare(frame, required), label, None
     except Exception as exc:
         return pd.DataFrame(columns=required), str(path), f"无法读取 {path.name}：{exc}"
+
+
+@st.cache_data(show_spinner=False)
+def _load_bundled_table(path, modified, supplement_path, supplement_modified):
+    frame = read_table(path)
+    if supplement_path:
+        extra = read_table(supplement_path)
+        present = set(frame["车系"].fillna("").map(_norm))
+        extra = extra[~extra["车系"].fillna("").map(_norm).isin(present)]
+        frame = pd.concat([frame, extra], ignore_index=True)
+    return frame
 
 
 def _norm(value):

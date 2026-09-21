@@ -10,7 +10,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import streamlit as st
-from session_runtime import SessionFile, persist_upload, source_version
+from session_runtime import SessionFile, persist_upload, source_version, remaining_session_calls
 
 st.set_page_config(page_title="小羊分析助手", page_icon="🐑", layout="wide", initial_sidebar_state="collapsed")
 st.caption("🐑 公开体验版 · 销量与用户样本为演示数据，不代表真实调研结论。上传内容仅在当前会话中使用；点击 AI 分析会发送至 DeepSeek，请仅上传模拟或已脱敏资料。")
@@ -786,8 +786,10 @@ def prepare_page_data(page):
             car_df.to_json(orient="split",force_ascii=False),
             f"{PERIOD_RANGE_TEXT}|regional-v4-capacity",summary_only)
         if page in {"用户洞察","策略生成"}:
-            user_material_df=load_user_materials()
-            user_profile_survey_df,user_profile_survey_path=load_user_profile_survey()
+            user_material_df,_,material_error=dsui.load_source_table("materials")
+            user_profile_survey_df,user_profile_survey_path,survey_error=dsui.load_source_table("survey")
+            if material_error: st.warning(material_error)
+            if survey_error: st.warning(survey_error)
 
 
 def default_target_name(): return str(car_df.iloc[0]["车系"]) if len(car_df) else "奥迪A6L"
@@ -3098,7 +3100,7 @@ def render_user_insight_page(target):
     material_ids=set(material_rows.apply(dsui._material_id,axis=1)) if not material_rows.empty else set()
     analyzed_ids=set(cache_rows["材料ID"].astype(str)) if not cache_rows.empty else set()
     pending_count=len(material_ids-analyzed_ids)
-    batch_count=min(20,pending_count)
+    batch_count=min(5,pending_count,max(0,remaining_session_calls()-1))
     survey_profile=build_survey_profile(target,survey_rows) if not survey_rows.empty else None
     upload_signature=tuple((item.name,getattr(item,"size",0)) for item in [survey_upload,materials_upload] if item is not None)
     if upload_signature and st.session_state.get("user_upload_dialog_signature")!=upload_signature:
@@ -3106,7 +3108,8 @@ def render_user_insight_page(target):
         _show_user_data_loaded_dialog({"survey":len(survey_rows),"materials":len(material_rows),"pending":pending_count,"analyzed":len(cache_rows),"batch":batch_count})
     config=dsui.api_config()
     if not config["api_key"]:
-        st.info("暂未检测到 DeepSeek API Key，请在项目根目录 .env 文件中配置 DEEPSEEK_API_KEY。")
+        st.info("在线 AI 暂未启用。下方问卷画像与基础洞察仍可直接查看，无需填写密钥。")
+    st.caption(f"当前匹配：{len(survey_rows)} 份问卷 · {len(material_rows)} 条原文 · {len(cache_rows)} 条已完成 AI 分析。未上传时使用明确标注的演示样本。")
     analyzed_count=len(cache_rows)
     summary=dsui.get_cached_summary(target,len(survey_rows),len(material_rows),analyzed_count)
     if material_rows.empty:
@@ -3120,11 +3123,13 @@ def render_user_insight_page(target):
             st.markdown('<div style="text-align:center;color:#8FA7C2;font-size:12px;margin:5px 0 10px;">自动分析新增语料并生成当前分析对象的AI洞察总结；已有结果将直接复用。</div>',unsafe_allow_html=True)
             if run_report:
                 errors=[]
-                if pending_count:
+                if pending_count and not batch_count:
+                    errors.append("本次体验的 AI 额度不足以继续提取新材料；下方仍可查看现有结果。")
+                if batch_count:
                     with st.spinner(f"正在分析本批 {batch_count} 条新增材料……"):
-                        _,errors=dsui.analyze_new_materials(material_rows,target,20)
+                        _,errors=dsui.analyze_new_materials(material_rows,target,batch_count)
                 refreshed_cache=dsui.cache_for_materials(material_rows)
-                if not refreshed_cache.empty:
+                if not refreshed_cache.empty and (batch_count or summary is None) and not errors:
                     with st.spinner("正在生成页面级用户洞察总结……"):
                         try:
                             summary=dsui.generate_summary(target,survey_profile or {},refreshed_cache,len(survey_rows),len(material_rows))
@@ -3133,9 +3138,11 @@ def render_user_insight_page(target):
                 if errors:
                     st.error("部分分析未完成：\n"+"\n".join(errors[:5]))
                 else:
-                    st.success("AI报告已生成，页面结论已更新。")
+                    st.session_state["user_report_notice"]=f"AI 报告已更新，已分析 {len(refreshed_cache)} / {len(material_ids)} 条材料；未分析材料不计入 AI 结论。"
                     st.rerun()
             _render_ai_summary(summary)
+    if st.session_state.get("user_report_notice"):
+        st.success(st.session_state.pop("user_report_notice"))
     render_survey_profile(target,rows_override=survey_rows,source_available=not survey_all.empty)
     if survey_rows.empty and material_rows.empty:
         st.warning("当前车型暂无用户洞察数据，请上传或补充对应问卷表与用户原文材料。")

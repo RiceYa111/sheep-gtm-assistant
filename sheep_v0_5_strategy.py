@@ -13,7 +13,20 @@ import streamlit as st
 from session_runtime import SessionFile, persist_upload, source_version, remaining_session_calls
 
 st.set_page_config(page_title="小羊分析助手", page_icon="🐑", layout="wide", initial_sidebar_state="collapsed")
+st.html("<style>" + Path(__file__).with_name("mobile.css").read_text(encoding="utf-8") + "</style>")
 st.caption("🐑 公开体验版 · 销量与用户样本为演示数据，不代表真实调研结论。上传内容仅在当前会话中使用；点击 AI 分析会发送至 DeepSeek，请仅上传模拟或已脱敏资料。")
+
+# The wrapper is neutral on desktop; mobile.css gives the chart its own scroll area.
+_chart_index = 0
+
+def render_responsive_chart(fig, **kwargs):
+    global _chart_index
+    compact = bool(fig.data) and all(trace.type == "pie" for trace in fig.data)
+    kind = "compact" if compact else "wide"
+    chart_key = f"mobile_chart_{kind}_{_chart_index}"
+    _chart_index += 1
+    with st.container(key=chart_key):
+        st.plotly_chart(fig, **kwargs)
 
 REGION_OPTIONS = ["全国","北京市","天津市","河北省","山西省","内蒙古自治区","辽宁省","吉林省","黑龙江省","上海市","江苏省","浙江省","安徽省","福建省","江西省","山东省","河南省","湖北省","湖南省","广东省","广西壮族自治区","海南省","重庆市","四川省","贵州省","云南省","西藏自治区","陕西省","甘肃省","青海省","宁夏回族自治区","新疆维吾尔自治区","台湾省"]
 PRICE_SEGMENTS = ["5万以下","5-10万","10-20万","20-30万","30-40万","40-50万","50-60万","60-70万","70-80万","80-100万","100万以上"]
@@ -1639,7 +1652,7 @@ def render_head_to_head(tiers,sales_scope,target,is_brand_query,regions):
         fig=px.line(long,x="月份",y="销量",color="对象",markers=True,category_orders={"月份":PERIOD_LABELS},color_discrete_map={"本品":"#FFD166",competitor:"#6EA8FE"})
         fig=plotly_layout(fig,320)
         fig.update_layout(legend=dict(orientation="h",x=.5,xanchor="center",y=1.08))
-        st.plotly_chart(fig,use_container_width=True)
+        render_responsive_chart(fig,use_container_width=True)
 
 def render_competitor_tiers(tiers,is_brand_query):
     for tier,limit,note in [("核心竞品",4,"长期或近期销量领先，形成直接竞争压力"),("次级竞品",3,"近期销量增长，可能形成新增竞争压力")]:
@@ -2253,7 +2266,7 @@ def render_objective_market_dashboard(market_scope,regions):
                         fig.update_yaxes(title=f"销量（{unit}）")
                     fig=plotly_layout(fig,360)
                     fig.update_layout(title=dict(font=dict(color="#F5FAFF",size=15),x=.01),legend=dict(orientation="h",y=-.34,x=.5,xanchor="center",font=dict(size=12,color="#F5FAFF")),margin=dict(l=30,r=15,t=55,b=105))
-                    st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False})
+                    render_responsive_chart(fig,use_container_width=True,config={"displayModeBar":False})
             if dimension is None:
                 finding=f"近3月月均销量较此前3个月 {growth:+.1%}，当前市场处于{'扩张' if growth>0.03 else '收缩' if growth<-.03 else '平稳'}阶段。"
             else:
@@ -2542,7 +2555,7 @@ def render_region_chart_grid(regions,scope_map,chart_kind,prices,target_energy_g
                       if chart_kind in ["energy","body"] else
                       f"目标对象市占率 = 目标对象当月销量 ÷ {region}当前筛选市场当月销量。")
                 st.markdown(f'<div class="module-chart-head"><div class="module-chart-title">{title}</div><div class="module-chart-note">{note}</div></div>',unsafe_allow_html=True)
-                st.plotly_chart(fig,use_container_width=True)
+                render_responsive_chart(fig,use_container_width=True)
 
 def render_module_region_conclusion(regions,scope_map,chart_kind,structure_scope_map=None):
     if not regions:
@@ -2788,7 +2801,7 @@ def render_survey_profile(target, rows_override=None, source_available=True):
                 values=profile["distributions"].get(field,[])
                 with st.container(border=True):
                     if values:
-                        st.plotly_chart(profile_distribution_figure(f"{field}分布",values),use_container_width=True,key=f'profile_{field}_{norm_search(target.get("query","target"))}')
+                        render_responsive_chart(profile_distribution_figure(f"{field}分布",values),use_container_width=True,key=f'profile_{field}_{norm_search(target.get("query","target"))}')
                     else:
                         st.markdown(f'<div class="ai-card"><b>{field}分布</b><br><span class="small-note">样本不足，暂不判断</span></div>',unsafe_allow_html=True)
 
@@ -3653,7 +3666,7 @@ def render_strategy_onepager(target,filters):
     )
     for role_no,role in enumerate(role_order):
         gantt_fig.add_annotation(x=-.02,xref="paper",y=role,yref="y",text=f"<b>{html.escape(str(role))}</b>",showarrow=False,xanchor="right",font=dict(color=gantt_colors[role_no%len(gantt_colors)],size=12,family="Microsoft YaHei, SimHei, Arial"))
-    st.plotly_chart(gantt_fig,use_container_width=True,config={"displayModeBar":False})
+    render_responsive_chart(gantt_fig,use_container_width=True,config={"displayModeBar":False})
 
 
 requested_module=st.query_params.get("module")
@@ -3804,7 +3817,7 @@ else:
                         with column:
                             share_fig=render_top15_share_chart(sales_scope,is_brand_query,region,chart_target_products,compact_grid)
                             share_fig.update_layout(title=dict(text=f"{region}｜{price_range_text}{format_options(bodies)} TOP15份额",x=.5,xanchor="center",y=.97,font=dict(size=14,color="#EAF3FF")),margin=dict(l=24,r=12,t=58,b=115))
-                            st.plotly_chart(share_fig,use_container_width=True)
+                            render_responsive_chart(share_fig,use_container_width=True)
                             st.markdown(competition_legend_markup(sales_scope,is_brand_query,region,chart_target_products,compact_grid),unsafe_allow_html=True)
                 render_competition_opportunity_insight(sales_scope,is_brand_query,regions,f"{price_range_text}{comparison_level}竞争格局")
 
@@ -3825,7 +3838,7 @@ else:
                                     continue
                                 nev_fig=render_new_energy_share_chart(nev_scope,is_brand_query,region,chart_target_products,compact_grid)
                                 nev_fig.update_layout(title=dict(text=f"{region}｜新能源SUV TOP15份额",x=.5,xanchor="center",y=.97,font=dict(size=14,color="#EAF3FF")),margin=dict(l=24,r=12,t=58,b=115))
-                                st.plotly_chart(nev_fig,use_container_width=True)
+                                render_responsive_chart(nev_fig,use_container_width=True)
                                 st.markdown(competition_legend_markup(nev_scope,is_brand_query,region,chart_target_products,compact_grid),unsafe_allow_html=True)
                     render_competition_opportunity_insight(nev_scope,is_brand_query,regions,f"{price_range_text}新能源SUV{comparison_level}竞争格局")
 

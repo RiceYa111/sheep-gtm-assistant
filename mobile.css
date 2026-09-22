@@ -1,0 +1,148 @@
+/* Mobile daylight only. Desktop rules and Plotly specifications stay unchanged. */
+@media (max-width: 767px) {
+  html { color-scheme: light; }
+  .stApp { background: #f6f8fc !important; color: #172b4d !important; }
+  .block-container { padding: 20px 16px calc(94px + env(safe-area-inset-bottom)) !important; }
+  .stApp :is(p,span,div,label,b,strong,h1,h2,h3,h4,small,li) { color: #243653 !important; }
+  .stApp :is(h1,h2,h3,h4) { line-height: 1.4; overflow-wrap: anywhere; }
+  .stApp h3 { font-size: 21px !important; }
+  .stApp a { color: #2465db !important; }
+  .stApp [data-testid="stCaptionContainer"] p { color: #61728a !important; font-size: 11px; line-height: 1.6; }
+  [data-testid="stHorizontalBlock"] { flex-wrap: wrap !important; gap: 12px !important; }
+  div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] { width: 100% !important; flex: 1 1 100% !important; min-width: 0 !important; }
+  [data-testid="stVerticalBlock"], [data-testid="stElementContainer"] { min-width: 0; }
+  [data-testid="stElementContainer"]:has([data-testid="stMarkdownContainer"] > style) { display: none !important; }
+  [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:not(:has([data-testid="stElementContainer"])) { display: none; }
+
+  /* Homepage: clear search and a 2-by-2 module grid. */
+  .home-title { font-size: 32px !important; margin: 30px 0 8px !important; text-align: left !important; letter-spacing: -1px; }
+  .home-title::before { content: "🐑"; display: block; font-size: 38px; margin-bottom: 14px; }
+  .home-subtitle { text-align: left !important; font-size: 14px !important; color: #61728a !important; margin-bottom: 16px !important; }
+  [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"] > [data-testid="stVerticalBlock"] > [data-testid="stElementContainer"] .home-module-card) > [data-testid="stColumn"] { flex: 1 1 calc(50% - 6px) !important; width: calc(50% - 6px) !important; }
+  .home-module-card { min-height: 142px !important; padding: 17px !important; border-radius: 18px !important; text-decoration: none !important; }
+  .home-module-title { font-size: 18px !important; margin-bottom: 8px !important; }
+  .home-module-card::before { display: block; font-size: 24px; margin-bottom: 10px; }
+  .home-module-card[href*="市场大盘"]::before { content: "📊"; }
+  .home-module-card[href*="竞品格局"]::before { content: "🏆"; }
+  .home-module-card[href*="用户洞察"]::before { content: "👥"; }
+  .home-module-card[href*="策略生成"]::before { content: "💡"; }
+  .home-module-desc { font-size: 12px !important; line-height: 1.7 !important; color: #61728a !important; }
+  [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"] > [data-testid="stVerticalBlock"] > [data-testid="stElementContainer"] [data-testid="stTextInput"] input[aria-label="搜索品牌或车系"]) { flex-wrap: nowrap !important; }
+  [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"] > [data-testid="stVerticalBlock"] > [data-testid="stElementContainer"] [data-testid="stTextInput"] input[aria-label="搜索品牌或车系"]) > [data-testid="stColumn"] { flex: 1 1 0 !important; width: auto !important; }
+  [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"] > [data-testid="stVerticalBlock"] > [data-testid="stElementContainer"] [data-testid="stTextInput"] input[aria-label="搜索品牌或车系"]) > [data-testid="stColumn"]:last-child { flex: 0 0 70px !important; }
+  [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"] > [data-testid="stVerticalBlock"] > .st-key-home_query) > [data-testid="stColumn"]:last-child button { background: #2465db !important; border-color: #2465db !important; }
+  [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"] > [data-testid="stVerticalBlock"] > .st-key-home_query) > [data-testid="stColumn"]:last-child button * { color: #fff !important; }
+  [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"] > [data-testid="stVerticalBlock"] > [class*="st-key-quick_"]) { flex-wrap: nowrap !important; gap: 8px !important; }
+  [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"] > [data-testid="stVerticalBlock"] > [class*="st-key-quick_"]) > [data-testid="stColumn"] { flex: 1 1 0 !important; width: auto !important; }
+
+  /* Keep the existing native Streamlit callbacks; only relocate navigation. */
+  [data-testid="stColumn"]:has(> [data-testid="stVerticalBlock"] > [data-testid="stElementContainer"] .side-card) {
+    position: fixed !important; bottom: 0; left: 0; right: 0; width: 100% !important;
+    z-index: 990; background: #ffffff !important; border-top: 1px solid #dce5f2;
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); box-shadow: 0 -4px 20px #172b4d0a;
+  }
+  [data-testid="stColumn"]:has(> [data-testid="stVerticalBlock"] > [data-testid="stElementContainer"] .side-card) > [data-testid="stVerticalBlock"] { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 4px; }
+  [data-testid="stElementContainer"]:has(.side-card) { display: none !important; }
+  .st-key-side_home { order: -1; }
+  [data-testid="stColumn"]:has(.side-card) button { padding: 6px 2px !important; border: 0 !important; background: transparent !important; box-shadow: none !important; min-height: 48px !important; }
+  [data-testid="stColumn"]:has(.side-card) button p { font-size: 11px !important; }
+  .active-nav { flex-direction: column; gap: 2px !important; padding: 5px 2px !important; margin: 0 !important; min-height: 48px; border: 0 !important; background: #eaf2ff !important; border-radius: 10px !important; }
+  .active-nav b { font-size: 11px; color: #2465db !important; }
+
+  /* White surfaces and readable typography replace the desktop navy cards. */
+  :is(.home-module-card,.hero-card,.kpi-card,.chart-card,.ai-card,.series-card,.objective-kpi,.series-scope-shell,.series-click-card,.competitor-card,.competitor-summary,.summary-card,.insight-panel,.overview-core-card,.region-compare-card,.region-metric,.competition-insight,.competition-insight-card,.user-upload-shell,.user-profile-card,.user-persona-hero,.user-need-panel,.user-competitor-card,.user-script-card,.user-ai-toolbar,.user-ai-kpi,.user-top-item,.user-evidence-card,.user-action-card,.user-quote-single,.strategy-confirm,.strategy-verdict,.strategy-opportunity-card,.strategy-core-card,.strategy-stage-card) {
+    background: #fff !important; border-color: #dce5f2 !important; box-shadow: 0 4px 16px #172b4d06 !important;
+  }
+  :is(.hero-card,.chart-card,.ai-card,.competitor-summary,.user-persona-hero,.user-quote-single) { padding: 18px !important; border-radius: 18px !important; }
+  :is(.main-title,.hero-title,.user-persona-name) { font-size: 26px !important; line-height: 1.35 !important; }
+  .main-title-row { gap: 10px; }
+  .sub-title { font-size: 13px !important; margin-bottom: 14px !important; }
+  .hero-card > div { gap: 12px !important; align-items: flex-start !important; }
+  .hero-icon { width: 44px !important; height: 44px !important; flex: 0 0 44px; font-size: 23px !important; border-radius: 12px !important; background: #e8f1ff !important; }
+  .hero-meta { font-size: 12px !important; overflow-wrap: anywhere; }
+  :is(.objective-kpi-grid,.series-click-grid,.user-profile-grid,.region-metric-grid,.user-ai-kpis) { grid-template-columns: repeat(2,minmax(0,1fr)) !important; gap: 10px !important; }
+  :is(.summary-grid,.insight-grid,.overview-core-grid,.tier-core-grid,.competition-insight-grid,.region-compare-grid,.user-need-layout,.user-competitor-grid,.user-script-grid,.user-evidence-grid,.user-action-grid,.user-competitor-cards,.strategy-opportunity-grid,.strategy-core-grid,.strategy-stage-grid,.strategy-placeholder-grid) { grid-template-columns: minmax(0,1fr) !important; }
+  .kpi-card { min-height: 104px !important; padding: 16px !important; }
+  .kpi-value { font-size: 23px !important; white-space: normal !important; overflow-wrap: anywhere; }
+  [data-testid="stHorizontalBlock"]:has(> [data-testid="stColumn"] > [data-testid="stVerticalBlock"] > [data-testid="stElementContainer"] .kpi-card) > [data-testid="stColumn"] { flex: 1 1 calc(50% - 6px) !important; width: calc(50% - 6px) !important; }
+  .user-persona-hero { min-height: 0 !important; grid-template-columns: minmax(0,1fr) !important; gap: 14px !important; }
+  .user-persona-hero-icon { width: 64px !important; height: 64px !important; font-size: 34px !important; background: #eaf2ff !important; box-shadow: none !important; }
+  .user-persona-tags { grid-template-columns: repeat(2,minmax(0,1fr)) !important; gap: 8px !important; }
+  .user-persona-tag { min-height: 60px !important; padding: 10px !important; background: #f1f6ff !important; border-color: #dce5f2 !important; }
+  :is(.user-profile-summary,.user-rank-row,.user-reason-item,.competitor-rationale,.cr-conclusion,.quick-scope-preview,.strategy-result-status,.strategy-waiting-note) { background: #edf4ff !important; border-color: #c8daf6 !important; }
+  .user-rank-row { margin-right: 0 !important; }
+  .user-rank-head { flex-wrap: wrap; gap: 6px !important; }
+  .user-rank-no { background: #dbeaff !important; }
+  :is(.tag,.status-pill,.build-badge,.series-mini-chip,.user-source-pill,.strategy-tags span) { background: #edf4ff !important; color: #245dae !important; border-color: #c8daf6 !important; }
+  :is(.kpi-delta,.objective-kpi-delta,.status-real) { color: #14734c !important; background: #e9f7ef !important; }
+  .status-sim { color: #875900 !important; background: #fff4d8 !important; }
+  .data-status { background: #fff !important; padding: 10px !important; gap: 6px !important; }
+  .user-section-title { font-size: 22px !important; }
+  :is(.competitor-brand-header,.section-nav-head,.quick-scope-head,.quick-scope-preview) { flex-wrap: wrap; }
+  .competitor-brand-header { background: #edf4ff !important; }
+  .series-mini-row { overflow-x: auto !important; padding-bottom: 6px; }
+  .opportunity-callout,.insight-summary,.overview-verdict { background: #edf4ff !important; border-color: #c8daf6 !important; }
+  .overview-shell,.overview-concentration,.filter-panel-card { background: #fff !important; border-color: #dce5f2 !important; box-shadow: none !important; }
+  .overview-shell,.filter-panel-card { padding: 16px !important; border-radius: 18px !important; }
+  .strategy-opportunity,.strategy-role-setup,.strategy-role-gantt,.strategy-timeline { background: #fff !important; border-color: #dce5f2 !important; }
+  .strategy-verdict-text { font-size: 20px !important; padding-right: 0 !important; }
+  .strategy-opportunity { min-height: 0 !important; }
+  .strategy-plan-grid { grid-template-columns: minmax(0,1fr) !important; }
+  .strategy-plan-card::after { background: #fff !important; }
+  .strategy-timeline { overflow-x: auto; }
+  .strategy-week-head,.strategy-timeline-row { min-width: 650px; }
+  .strategy-task-bar *,.strategy-stage-bar * { color: #fff !important; }
+  .competition-legend { margin: 4px 4px 16px !important; }
+  .competition-legend-row { grid-template-columns: repeat(2,minmax(0,1fr)) !important; }
+  .competition-legend-name { white-space: normal !important; overflow-wrap: anywhere; }
+
+  /* Local section navigation scrolls without making the page wider. */
+  .section-nav { position: static !important; background: #fff !important; border-color: #dce5f2 !important; padding: 12px !important; box-shadow: none !important; }
+  .section-nav-links { display: flex !important; overflow-x: auto; gap: 8px; padding-bottom: 4px; }
+  .section-nav a { flex: 0 0 auto; min-width: 104px; min-height: 44px; background: #edf4ff !important; border-color: #dce5f2 !important; }
+  .section-nav-desc { display: none !important; }
+  .section-anchor { scroll-margin-top: 16px !important; }
+
+  /* Forms, expanded filters, upload and portal menus must all use daylight. */
+  .stApp :is(input,textarea), .stApp [data-baseweb="input"], .stApp [data-baseweb="base-input"], .stApp [data-baseweb="textarea"],
+  .stApp [data-baseweb="select"] > div, .stApp [data-testid="stExpander"] [data-baseweb="select"] > div {
+    color: #172b4d !important; background: #fff !important; border-color: #ccd9eb !important; border-radius: 12px !important; font-size: 16px !important;
+  }
+  .stApp input::placeholder, .stApp textarea::placeholder { color: #7b8ca5 !important; }
+  .stApp input { min-height: 46px; }
+  .stApp button[kind="secondary"], .stApp [data-testid="stDownloadButton"] button { background: #edf4ff !important; color: #245dae !important; border: 1px solid #c8daf6 !important; border-radius: 12px !important; min-height: 44px; }
+  .stApp button[kind="primary"], .stApp [data-testid="stForm"] button { background: #2465db !important; border-color: #2465db !important; min-height: 44px; }
+  .stApp button[kind="primary"] *, .stApp [data-testid="stForm"] button * { color: #fff !important; }
+  .stApp [data-testid="stForm"], .stApp [data-testid="stExpander"] details, .stApp [data-testid="stExpander"] summary, .stApp [data-testid="stPopoverBody"], [data-testid="stDialog"] [role="dialog"] {
+    background: #fff !important; border-color: #ccd9eb !important; box-shadow: none !important;
+  }
+  .stApp [data-testid="stForm"] :is(label,p,span,div), .stApp [data-testid="stPopoverBody"] :is(label,p,span,div), .stApp [data-testid="stExpander"] summary :is(p,span) { color: #243653 !important; }
+  .stApp [data-testid="stForm"] [data-baseweb="select"] > div, .stApp [data-testid="stPopoverBody"] [data-baseweb="select"] > div { background: #fff !important; color: #243653 !important; }
+  .stApp [data-baseweb="tag"] { background: #e6efff !important; border-color: #c8daf6 !important; }
+  .stApp [data-baseweb="tag"] span, .stApp [data-testid="stForm"] [data-baseweb="tag"] span { color: #245dae !important; }
+  [data-baseweb="menu"], ul[role="listbox"], li[role="option"], li[role="option"] * { background: #fff !important; color: #243653 !important; border-color: #ccd9eb !important; }
+  li[role="option"]:hover, li[role="option"][aria-selected="true"], li[role="option"]:hover * { background: #edf4ff !important; color: #245dae !important; }
+  .stApp [data-testid="stFileUploaderDropzone"] { background: #f1f6ff !important; border-color: #9cbae5 !important; flex-wrap: wrap; padding: 14px !important; }
+  .stApp [data-testid="stFileUploaderDropzone"] :is(small,span,div) { color: #61728a !important; }
+  .stApp [data-testid="stFileUploaderDropzone"] button { background: #2465db !important; color: #fff !important; min-height: 44px; }
+  .stApp [data-testid="stFileUploaderDropzone"] button * { color: #fff !important; }
+
+  /* Plotly keeps its data and interactions. Only wide charts scroll. */
+  div[class*="st-key-mobile_chart_"] { max-width: 100%; overflow-x: auto !important; overflow-y: hidden; border: 1px solid #dce5f2; border-radius: 16px; background: #fff; padding-bottom: 8px; -webkit-overflow-scrolling: touch; scrollbar-color: #9fb8dc #edf4ff; }
+  div[class*="st-key-mobile_chart_"] > [data-testid="stElementContainer"] { min-width: 680px !important; width: 680px !important; }
+  div[class*="st-key-mobile_chart_compact_"] > [data-testid="stElementContainer"] { min-width: 340px !important; width: 100% !important; }
+  div[class*="st-key-mobile_chart_"]::before { content: "↔ 左右滑动查看完整图表 · 点击查看数值"; display: block; position: sticky; left: 0; width: max-content; max-width: 100%; box-sizing: border-box; padding: 10px 12px 0; font-size: 11px; color: #61728a; }
+  div[class*="st-key-mobile_chart_compact_"]::before { content: "点击查看数值 · 图表可左右滑动"; }
+  .js-plotly-plot .main-svg { background: transparent !important; }
+  .js-plotly-plot :is(.bglayer rect,.legend .bg) { fill: #fff !important; }
+  .js-plotly-plot :is([class*="tick"] text,[class*="title"] text,.legendtext,.annotation-text) { fill: #334765 !important; }
+  .js-plotly-plot .modebar { display: none !important; }
+  .js-plotly-plot .gridlayer path { stroke: #e4ebf5 !important; }
+  .js-plotly-plot .hoverlayer text { fill: #fff !important; }
+  .chart-card:has(.cr-table) { overflow-x: auto; }
+  .cr-table { min-width: 540px; }
+  .cr-table :is(th,td) { color: #243653 !important; border-color: #dce5f2 !important; }
+  .cr-table th { background: #edf4ff; }
+  .cr-table td b, .cr-conclusion b { color: #2465db !important; }
+  .mini-help::after { max-width: 240px !important; min-width: 150px !important; }
+}

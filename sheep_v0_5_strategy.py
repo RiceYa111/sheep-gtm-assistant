@@ -3237,7 +3237,11 @@ def render_user_insight_page(target):
             score=round(6+4*(mention_count/max_mentions),1)
             rank_value=f"{mention_count} 位受访者" if st.session_state.get("_source_document") else f"{score:.1f}分｜{mention_count}次提及"
             reason=None if st.session_state.get("_source_document") else next((value for keyword,value in reason_rules.items() if keyword in str(name)),None)
-            if not reason and index-1<len(reasons): reason=str(reasons[index-1][0])
+            if st.session_state.get("_source_document"):
+                related=cache_rows[cache_rows.apply(lambda row:str(name) in dsui._json_list(row.get("核心需求",[])),axis=1)]
+                related_reasons=dsui.aggregate_top(related,"关注理由",1)
+                reason=str(related_reasons[0][0]) if related_reasons else "材料未提供明确的关注原因"
+            elif not reason and index-1<len(reasons): reason=str(reasons[index-1][0])
             reason=reason or "该需求在当前用户材料中多次参与选择判断"
             rows.append(f'<div class="user-rank-row"><div class="user-rank-no">{index}</div><div class="user-rank-head"><div class="user-rank-name">{html.escape(str(name))}</div><div class="user-rank-value">{rank_value}</div></div><div class="user-rank-detail"><b>关注原因：</b>{html.escape(reason)}</div></div>')
         st.markdown(f'<div class="user-rank-stack">{"".join(rows)}</div>',unsafe_allow_html=True)

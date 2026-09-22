@@ -2,7 +2,7 @@
 @media (max-width: 767px) {
   html { color-scheme: light; }
   .stApp { background: #f6f8fc !important; color: #172b4d !important; }
-  .block-container { padding: 20px 16px calc(94px + env(safe-area-inset-bottom)) !important; }
+  .block-container { padding: 20px 16px calc(134px + env(safe-area-inset-bottom)) !important; }
   .stApp :is(p,span,div,label,b,strong,h1,h2,h3,h4,small,li) { color: #243653 !important; }
   .stApp :is(h1,h2,h3,h4) { line-height: 1.4; overflow-wrap: anywhere; }
   .stApp h3 { font-size: 21px !important; }
@@ -37,9 +37,10 @@
 
   /* Keep the existing native Streamlit callbacks; only relocate navigation. */
   [data-testid="stColumn"]:has(> [data-testid="stVerticalBlock"] > [data-testid="stElementContainer"] .side-card) {
-    position: fixed !important; bottom: 0; left: 0; right: 0; width: 100% !important;
-    z-index: 990; background: #ffffff !important; border-top: 1px solid #dce5f2;
-    padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); box-shadow: 0 -4px 20px #172b4d0a;
+    /* Leave room for the hosting service's bottom badge and device safe area. */
+    position: fixed !important; bottom: calc(40px + env(safe-area-inset-bottom)); left: 8px; right: 8px; width: calc(100% - 16px) !important;
+    z-index: 990; background: #ffffff !important; border: 1px solid #dce5f2; border-radius: 16px;
+    padding: 8px; box-shadow: 0 -4px 20px #172b4d0a;
   }
   [data-testid="stColumn"]:has(> [data-testid="stVerticalBlock"] > [data-testid="stElementContainer"] .side-card) > [data-testid="stVerticalBlock"] { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 4px; }
   [data-testid="stElementContainer"]:has(.side-card) { display: none !important; }

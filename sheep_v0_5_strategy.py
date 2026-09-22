@@ -2737,8 +2737,10 @@ def build_survey_profile(target,rows):
     elif any(token in motive+occupation for token in ["品牌升级","豪华","企业主","管理者","商务"]): persona="豪华品牌升级型"
     elif any(token in motive for token in ["商务","通勤"]): persona="商务通勤型"
     else: persona="理性综合决策型"
+    if st.session_state.get("_source_document") and all(tops[k] in ("未知","样本不足，暂不判断") for k in ("年龄段","职业","家庭结构","首购 / 增购 / 换购","购车动因")):
+        persona="画像信息不足"
     target_label=f'{target.get("query",target.get("车系","当前目标"))}品牌相关样本' if target.get("is_brand_query") else target.get("车系","当前车型")
-    summary=(f'从当前问卷样本看，{target_label}用户主要集中在 {tops["年龄段"]}，职业以 {tops["职业"]} 为主，'
+    summary=(f'从当前材料样本看，{target_label}用户主要集中在 {tops["年龄段"]}，职业以 {tops["职业"]} 为主，'
              f'家庭结构多为 {tops["家庭结构"]}；购车类型以 {tops["首购 / 增购 / 换购"]} 为主，'
              f'决策周期集中在 {tops["决策周期"]}，主要购车动因是 {motive_top}。')
     keywords={"年龄":tops["年龄段"],"职业":tops["职业"],"家庭":tops["家庭结构"],"决策周期":tops["决策周期"],"购车动因":motive_top}
@@ -2775,7 +2777,7 @@ def render_survey_profile(target, rows_override=None, source_available=True):
     asset_path=(Path(__file__).resolve().parent/"assets"/asset_name) if asset_name else None
     tags="".join(f'<div class="user-persona-tag"><b>{html.escape(label)}</b>{html.escape(value)}为主</div>' if value!="样本不足，暂不判断" else f'<div class="user-persona-tag"><b>{html.escape(label)}</b>{value}</div>' for label,value in profile["keywords"].items())
     icon=icons.get(profile["persona"],"🚘")
-    st.markdown(f'<div class="user-persona-hero"><div class="user-persona-hero-icon">{icon}</div><div class="user-persona-copy"><div class="user-persona-kicker">PERSONA SNAPSHOT</div><div class="user-persona-name">{html.escape(profile["persona"])}</div><div class="user-persona-tags">{tags}</div><div class="user-survey-meta">当前口径有效问卷样本：{profile["sample_count"]} 份</div></div></div>',unsafe_allow_html=True)
+    st.markdown(f'<div class="user-persona-hero"><div class="user-persona-hero-icon">{icon}</div><div class="user-persona-copy"><div class="user-persona-kicker">PERSONA SNAPSHOT</div><div class="user-persona-name">{html.escape(profile["persona"])}</div><div class="user-persona-tags">{tags}</div><div class="user-survey-meta">当前口径有效个体样本：{profile["sample_count"]} 份</div></div></div>',unsafe_allow_html=True)
     st.markdown(f'<div class="user-profile-summary"><b>画像摘要</b><br>{html.escape(profile["summary"])}</div>',unsafe_allow_html=True)
     st.markdown('<div class="user-profile-evidence">数据支撑</div>',unsafe_allow_html=True)
     chart_fields=["年龄段","职业","购车预算","家庭结构","首购 / 增购 / 换购","决策周期"]
@@ -3080,16 +3082,44 @@ def render_user_insight_page(target):
     @media(max-width:900px){.user-ai-kpis{grid-template-columns:repeat(2,1fr)}.user-evidence-grid,.user-action-grid{grid-template-columns:1fr}.user-rank-row{margin-right:0!important}}
     </style>
     """,unsafe_allow_html=True)
-    st.markdown('<div class="user-section-title" style="margin-top:12px">◈ 上传用户资料与AI报告</div><div class="user-section-note">不上传时自动使用 data 文件夹中的资料；上传后优先使用本次文件，并可一键生成AI洞察总结。</div>',unsafe_allow_html=True)
+    st.markdown('<div class="user-section-title" style="margin-top:12px">◈ 上传用户资料与AI报告</div><div class="user-section-note">未上传时展示演示资料；上传后自动提取材料中的个体记录，并生成对应画像与洞察。</div>',unsafe_allow_html=True)
     upload_panel=st.container(border=True)
     with upload_panel:
-        upload_cols=st.columns(2,gap="medium")
-        with upload_cols[0]:
-            st.markdown('<div class="field-help-row"><b>问卷结果表</b><span class="mini-help" data-tooltip="用于统计年龄、职业、预算、家庭结构、购车类型与决策周期等用户画像分布。">&#128279;&#65038;</span></div>',unsafe_allow_html=True)
-            survey_upload=st.file_uploader("问卷结果表",type=["csv","xlsx"],accept_multiple_files=False,key="user_survey_upload",on_change=persist_upload,args=("survey","user_survey_upload"),label_visibility="collapsed")
-        with upload_cols[1]:
-            st.markdown('<div class="field-help-row"><b>用户原文材料表</b><span class="mini-help" data-tooltip="用于分析核心需求、顾虑、竞品比较、选择原因、沟通话术与用户实评。">&#128279;&#65038;</span></div>',unsafe_allow_html=True)
-            materials_upload=st.file_uploader("用户原文材料表",type=["csv","xlsx"],accept_multiple_files=False,key="user_materials_upload",on_change=persist_upload,args=("materials","user_materials_upload"),label_visibility="collapsed")
+        from user_documents import persist_document, extract_document
+        st.file_uploader("用户访谈/问卷材料", type=["docx","pdf","xlsx","csv"],
+                         key="user_document_upload", on_change=persist_document)
+        st.caption("支持 Word（DOCX）、文字版 PDF、Excel（XLSX）及 CSV。上传即发送至 DeepSeek 分析，请仅使用模拟或已脱敏资料。每次最多 5 MB、24000 字符、30 位受访者；扫描 PDF 请先转为文字版。")
+        document=st.session_state.get("_source_document")
+        if document:
+            import hashlib
+            attempt=hashlib.sha256(document[1]+dsui.target_label(target).encode()).hexdigest()
+            result=st.session_state.get("_document_result")
+            ready=bool(result and result["fingerprint"]==attempt)
+            retry=False
+            if st.session_state.get("_document_error"):
+                st.error(st.session_state["_document_error"])
+                retry=st.button("重试材料分析")
+            if not dsui.api_config()["api_key"]:
+                st.info("AI 尚未配置，暂不能分析上传材料。")
+            elif not ready and (st.session_state.get("_document_attempt")!=attempt or retry):
+                st.session_state["_document_attempt"]=attempt
+                try:
+                    with st.spinner("正在读取材料、提取个体信息并计算画像……"):
+                        extract_document(target)
+                    st.session_state.pop("_document_error",None)
+                    st.rerun()
+                except Exception as exc:
+                    st.session_state["_document_error"]="材料分析未完成："+str(exc)
+                    st.error(st.session_state["_document_error"])
+            result=st.session_state.get("_document_result")
+            if not result or result["fingerprint"]!=attempt:
+                st.info("尚无本次材料的分析结果。完成提取后才显示画像，不会使用默认演示样本填充。")
+                return
+            st.success(f"材料已提取：{len(result['survey'])} 位受访者。缺失信息标记为未知，比例由个体记录计算。")
+            with st.expander("查看提取明细，核对原文"):
+                st.dataframe(result["survey"],hide_index=True)
+                st.dataframe(result["materials"][["样本ID","用户原文"]],hide_index=True)
+        survey_upload=materials_upload=None
     survey_all,survey_source,survey_error=dsui.load_source_table("survey",survey_upload)
     materials_all,materials_source,materials_error=dsui.load_source_table("materials",materials_upload)
     if survey_error: st.warning(survey_error)
@@ -3112,6 +3142,15 @@ def render_user_insight_page(target):
     st.caption(f"当前匹配：{len(survey_rows)} 份问卷 · {len(material_rows)} 条原文 · {len(cache_rows)} 条已完成 AI 分析。未上传时使用明确标注的演示样本。")
     analyzed_count=len(cache_rows)
     summary=dsui.get_cached_summary(target,len(survey_rows),len(material_rows),analyzed_count)
+    if document and not cache_rows.empty and summary is None:
+        summary_attempt=dsui.summary_key(target,len(survey_rows),len(material_rows),analyzed_count)
+        if st.session_state.get("_document_summary_attempt")!=summary_attempt:
+            st.session_state["_document_summary_attempt"]=summary_attempt
+            try:
+                with st.spinner("正在汇总本次材料的洞察……"):
+                    summary=dsui.generate_summary(target,survey_profile or {},cache_rows,len(survey_rows),len(material_rows))
+            except Exception:
+                st.warning("个体提取和画像统计已完成，汇总暂未生成。可点击下方按钮重试汇总。")
     if material_rows.empty:
         st.info("当前车型暂无用户原文材料；可上传 user_materials.csv / xlsx，或补充本地默认文件。")
     else:
@@ -3168,7 +3207,7 @@ def render_user_insight_page(target):
         needs=reasons=concerns=improvements=competitors=dimensions=[]
     generic_competitors={"新能源车","新能源车型","新能源汽车","新势力","新势力车型","新能源替代车型","同级别车型","同价位竞品","竞品","其他竞品"}
     competitors=[(name,count) for name,count in competitors if str(name).strip() not in generic_competitors and not str(name).strip().endswith("替代车型")]
-    mode_note="基于 DeepSeek 已分析材料统计，刷新页面不会重复调用 API。" if ai_ready else "当前为 data 原文资料的本地提炼结果；点击上方“一键生成AI报告”后将升级为语义归纳。"
+    mode_note="基于 DeepSeek 已分析材料统计，刷新页面不会重复调用 API。" if ai_ready else "当前为原文资料的基础提炼结果；点击上方“一键生成AI报告”后生成语义归纳。"
     st.markdown(f'<div id="user-needs" class="section-anchor"></div><div class="user-section-title">◈ 核心需求排序</div><div class="user-section-note">{mode_note}</div>',unsafe_allow_html=True)
     if needs:
         raw_material_text="\n".join(material_rows.get("用户原文",pd.Series(dtype=str)).dropna().astype(str).tolist())
@@ -3181,7 +3220,7 @@ def render_user_insight_page(target):
         mentions=[]
         for name,count in needs[:5]:
             terms=need_terms.get(str(name),[str(name)])
-            mentions.append(max(1,keyword_score(raw_material_text,terms)))
+            mentions.append(int(count) if st.session_state.get("_source_document") else max(1,keyword_score(raw_material_text,terms)))
         max_mentions=max(mentions or [1])
         reason_rules={
             "空间":"商务接待与家庭出行都重视后排空间、静谧性和底盘舒适度",
@@ -3196,10 +3235,11 @@ def render_user_insight_page(target):
         rows=[]
         for index,((name,_),mention_count) in enumerate(ranked_needs,1):
             score=round(6+4*(mention_count/max_mentions),1)
-            reason=next((value for keyword,value in reason_rules.items() if keyword in str(name)),None)
+            rank_value=f"{mention_count} 位受访者" if st.session_state.get("_source_document") else f"{score:.1f}分｜{mention_count}次提及"
+            reason=None if st.session_state.get("_source_document") else next((value for keyword,value in reason_rules.items() if keyword in str(name)),None)
             if not reason and index-1<len(reasons): reason=str(reasons[index-1][0])
             reason=reason or "该需求在当前用户材料中多次参与选择判断"
-            rows.append(f'<div class="user-rank-row"><div class="user-rank-no">{index}</div><div class="user-rank-head"><div class="user-rank-name">{html.escape(str(name))}</div><div class="user-rank-value">{score:.1f}分｜{mention_count}次提及</div></div><div class="user-rank-detail"><b>关注原因：</b>{html.escape(reason)}</div></div>')
+            rows.append(f'<div class="user-rank-row"><div class="user-rank-no">{index}</div><div class="user-rank-head"><div class="user-rank-name">{html.escape(str(name))}</div><div class="user-rank-value">{rank_value}</div></div><div class="user-rank-detail"><b>关注原因：</b>{html.escape(reason)}</div></div>')
         st.markdown(f'<div class="user-rank-stack">{"".join(rows)}</div>',unsafe_allow_html=True)
     else: _render_ai_empty("尚无分析结果。上传或补充原文材料后，点击上方“一键生成AI报告”。")
     st.markdown('<div id="user-concerns" class="section-anchor"></div><div class="user-section-title">◈ 顾虑点 / 提升空间</div>',unsafe_allow_html=True)
@@ -3229,7 +3269,7 @@ def render_user_insight_page(target):
         cards=[]
         baseline_map={row[0]:row for row in (baseline.get("competitors",[]) if baseline else [])}
         for name,count in competitors[:5]:
-            public=public_competitor_profile(name)
+            public=None if st.session_state.get("_source_document") else public_competitor_profile(name)
             if ai_ready:
                 mask=cache_rows.apply(lambda row:name in dsui.list_values(pd.DataFrame([row]),"提及竞品"),axis=1)
                 related=cache_rows.loc[mask]

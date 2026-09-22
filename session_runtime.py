@@ -55,10 +55,13 @@ def saved_upload(kind):
 
 def source_version():
     digest = hashlib.sha256()
-    for kind in ("survey", "materials"):
+    for kind in ("survey", "materials", "document"):
         digest.update(kind.encode())
         value = st.session_state.get("_source_" + kind)
         digest.update(value[1] if value else b"bundled-demo-v2-complete-catalogue")
+    result=st.session_state.get("_document_result")
+    if result:
+        digest.update(result["fingerprint"].encode())
     return digest.hexdigest()
 
 

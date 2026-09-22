@@ -97,6 +97,11 @@ def find_local_table(kind):
 
 
 def load_source_table(kind, uploaded=None):
+    if st.session_state.get("_source_document"):
+        result=st.session_state.get("_document_result")
+        required=SURVEY_REQUIRED if kind=="survey" else MATERIAL_REQUIRED
+        frame=result.get(kind,pd.DataFrame()) if result else pd.DataFrame()
+        return _prepare(frame,required), "上传访谈/问卷材料", None
     if uploaded is None:
         uploaded = saved_upload(kind)
     required = SURVEY_REQUIRED if kind == "survey" else MATERIAL_REQUIRED + [

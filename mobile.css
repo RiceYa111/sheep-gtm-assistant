@@ -1,6 +1,28 @@
+/* Controller has no layout footprint. Previews remain hidden on desktop. */
+[data-testid="stElementContainer"]:has(.mobile-chart-controller) { display: none !important; }
+.mobile-chart-preview { display: none; }
+dialog.mobile-image-viewer { padding: 0; margin: 0; inset: 0; width: 100vw; height: 100dvh; max-width: none; max-height: none; border: 0; background: #f6f8fc; color: #243653; overscroll-behavior: contain; }
+dialog.mobile-image-viewer[open] { display: flex; flex-direction: column; }
+dialog.mobile-image-viewer::backdrop { background: #172b4d88; }
+dialog.mobile-image-viewer header { display: flex !important; visibility: visible !important; align-items: center; gap: 8px; padding: calc(10px + env(safe-area-inset-top)) 12px 10px; background: #fff; border-bottom: 1px solid #dce5f2; }
+dialog.mobile-image-viewer strong { margin-right: auto; font-size: 15px; color: #243653; }
+dialog.mobile-image-viewer button { min-height: 44px; padding: 8px 12px; border: 1px solid #c8daf6; border-radius: 10px; background: #edf4ff; color: #245dae; font: 13px sans-serif; }
+dialog.mobile-image-viewer .mobile-image-note { font: 12px/1.5 sans-serif; color: #61728a; margin: 10px 12px; }
+dialog.mobile-image-viewer .mobile-image-scroll { flex: 1; min-height: 0; overflow: auto; padding: 12px 12px calc(52px + env(safe-area-inset-bottom)); touch-action: pan-x pan-y pinch-zoom; overscroll-behavior: contain; }
+dialog.mobile-image-viewer img { display: block; max-width: none; height: auto; background: #fff; }
+dialog.mobile-image-viewer.is-fitted img { width: 100% !important; }
 /* Mobile daylight only. Desktop rules and Plotly specifications stay unchanged. */
 @media (max-width: 767px) {
   html { color-scheme: light; }
+  .stApp { --app-body-font-size: 12px; }
+  .stApp [data-testid="stMarkdownContainer"] p { font-size: 13px; }
+  :is(.opportunity-text,.summary-card.wide,.ai-card .insight-text,.overview-verdict) { font-size: 13px !important; line-height: 1.7 !important; }
+  .opportunity-callout { padding: 13px 14px !important; }
+  .module-chart-title { font-size: 17px !important; }
+  .module-chart-note { font-size: 11px !important; }
+  .home-title { margin-top: 12px !important; }
+  .home-module-card { min-height: 134px !important; }
+
   .stApp { background: #f6f8fc !important; color: #172b4d !important; }
   .block-container { padding: 20px 16px calc(134px + env(safe-area-inset-bottom)) !important; }
   .stApp :is(p,span,div,label,b,strong,h1,h2,h3,h4,small,li) { color: #243653 !important; }
@@ -128,13 +150,17 @@
   .stApp [data-testid="stFileUploaderDropzone"] button { background: #2465db !important; color: #fff !important; min-height: 44px; }
   .stApp [data-testid="stFileUploaderDropzone"] button * { color: #fff !important; }
 
-  /* Plotly keeps its data and interactions. Only wide charts scroll. */
-  div[class*="st-key-mobile_chart_"] { max-width: 100%; overflow-x: auto !important; overflow-y: hidden; border: 1px solid #dce5f2; border-radius: 16px; background: #fff; padding-bottom: 8px; -webkit-overflow-scrolling: touch; scrollbar-color: #9fb8dc #edf4ff; }
-  div[class*="st-key-mobile_chart_"] > [data-testid="stElementContainer"] { min-width: 680px !important; width: 680px !important; }
-  div[class*="st-key-mobile_chart_compact_"] > [data-testid="stElementContainer"] { min-width: 340px !important; width: 100% !important; }
-  div[class*="st-key-mobile_chart_"]::before { content: "↔ 左右滑动查看完整图表 · 点击查看数值"; display: block; position: sticky; left: 0; width: max-content; max-width: 100%; box-sizing: border-box; padding: 10px 12px 0; font-size: 11px; color: #61728a; }
-  div[class*="st-key-mobile_chart_compact_"]::before { content: "点击查看数值 · 图表可左右滑动"; }
+  /* A read-only SVG thumbnail replaces Plotly interactions on phones. */
+  div[class*="st-key-mobile_chart_"] { position: relative; max-width: 100%; overflow: hidden !important; border: 1px solid #dce5f2; border-radius: 16px; background: #fff; padding: 0; }
+  div[class*="st-key-mobile_chart_"] > [data-testid="stElementContainer"] { min-width: 680px !important; width: 680px !important; pointer-events: none !important; }
+  div[class*="st-key-mobile_chart_compact_"] > [data-testid="stElementContainer"] { min-width: 340px !important; width: 340px !important; }
+  div.mobile-chart-ready > [data-testid="stElementContainer"] { position: absolute !important; top: 0; left: 0; opacity: 0; }
+  .mobile-chart-preview { display: flex !important; flex-direction: column; align-items: center; width: 100%; border: 0; padding: 10px 8px 12px; background: #fff; border-radius: 16px; touch-action: pan-y; cursor: zoom-in; }
+  .mobile-chart-preview img { display: block; width: 100%; max-height: 244px; object-fit: contain; user-select: none; -webkit-user-drag: none; }
+  .mobile-chart-preview span { display: block; padding-top: 8px; font-size: 11px !important; color: #2465db !important; }
+  .mobile-chart-preview:focus-visible { outline: 2px solid #2465db; outline-offset: -3px; }
   .js-plotly-plot .main-svg { background: transparent !important; }
+  .js-plotly-plot,.js-plotly-plot * { pointer-events: none !important; touch-action: pan-y !important; }
   .js-plotly-plot :is(.bglayer rect,.legend .bg) { fill: #fff !important; }
   .js-plotly-plot :is([class*="tick"] text,[class*="title"] text,.legendtext,.annotation-text) { fill: #334765 !important; }
   .js-plotly-plot .modebar { display: none !important; }

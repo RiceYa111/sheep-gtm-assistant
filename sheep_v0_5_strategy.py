@@ -14,6 +14,9 @@ from session_runtime import SessionFile, persist_upload, source_version, remaini
 
 st.set_page_config(page_title="小羊分析助手", page_icon="🐑", layout="wide", initial_sidebar_state="collapsed")
 st.html("<style>" + Path(__file__).with_name("mobile.css").read_text(encoding="utf-8") + "</style>")
+st.html('<span class="mobile-chart-controller" aria-hidden="true"></span><script>' +
+        Path(__file__).with_name("mobile_charts.js").read_text(encoding="utf-8") + "</script>",
+        unsafe_allow_javascript=True)
 st.caption("🐑 公开体验版 · 销量与用户样本为演示数据，不代表真实调研结论。上传内容仅在当前会话中使用；点击 AI 分析会发送至 DeepSeek，请仅上传模拟或已脱敏资料。")
 
 # The wrapper is neutral on desktop; mobile.css gives the chart its own scroll area.
